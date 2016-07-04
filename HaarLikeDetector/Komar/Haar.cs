@@ -121,14 +121,14 @@ namespace HaarLikeDetector.Komar
                         for (sy = 0; sy <= s - 1; sy++)
                         {
                             //temp.sy = sy;
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskDualHorizonta));
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskDualVertical));
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskTripleHorizonta));
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskTripleVertical));
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskQuadCheess));
-                            keys.Add(new Elementator(px, py, sx, sy, genMaskCenter));
-                            keys.Add(new Elementator(px, py, sx, sy, genMask2x3Cheess));
-                            keys.Add(new Elementator(px, py, sx, sy, genMask3x2Cheess));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskDualHorizonta,1));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskDualVertical,2));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskTripleHorizonta,3));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskTripleVertical,4));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskQuadCheess,5));
+                            keys.Add(new Elementator(px, py, sx, sy, genMaskCenter,6));
+                            keys.Add(new Elementator(px, py, sx, sy, genMask2x3Cheess,7));
+                            keys.Add(new Elementator(px, py, sx, sy, genMask3x2Cheess,8));
 
                             /*
                             temp.Mask = new genMask(genMaskDualHorizonta);
@@ -255,7 +255,6 @@ namespace HaarLikeDetector.Komar
             double max_size = Math.Min(max_size_x, max_size_y);
             double sw, sh;
             int[,] active_rect;
-            int k = 0;
             //mount point
             Elementator element;
             foreach (int key in key_filter)
@@ -375,7 +374,7 @@ namespace HaarLikeDetector.Komar
 
             total = sumInRange(corners[0, 0], corners[0, 1], corners[1, 0], corners[1, 1]);
             FullQuatity = ((corners[0, 1] - corners[0, 0] + 1) * (corners[1, 1] - corners[1, 0] + 1));
-            //neg
+            //neg 
             negative += sumInRange(corners[0, 0], corners[0, 1], corners[1, 0], (int)Math.Round(corners[1, 1] / 3.0));
             negativeQuantity += ((corners[0, 1] - corners[0, 0] + 1) * ((int)Math.Round(corners[1, 1] / 3.0) - corners[1, 0] + 1));
             negative += sumInRange(corners[0, 0], corners[0, 1], 2 * (int)Math.Round(corners[1, 1] / 3.0) + 1, corners[1, 1]);
@@ -621,6 +620,82 @@ namespace HaarLikeDetector.Komar
                 ans = false;
             }
             return ans;
+        }
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+        Bitmap drawHaarFeature(Bitmap Image,int xb, int yb, int xe, int ye, Elementator ID)
+        {
+            Bitmap Face = new Bitmap(xe - xb, ye - yb);
+            for (int x = xb; x <= xe; x++) 
+            {
+                for (int y = yb; x <= ye; y++)
+                {
+                    Face.SetPixel(x - xb, y - yb, Image.GetPixel(x, y));
+                }
+            }
+            return drawHaarFeature(Face, ID);
+        }
+
+        Bitmap drawHaarFeature(Bitmap Face, Elementator ID)
+        {
+            int cx, cy;
+            double max_size_x = Face.Width / (p * 2);
+            double max_size_y = Face.Height / (p * 2);
+            double max_size = Math.Min(max_size_x, max_size_y);
+            double sw, sh;
+            int[,] active_rect;
+            cx = (int)Math.Round(Face.Width / 2.0 + ID.px * Face.Width / ((p + 1) * 2));
+            cy = (int)Math.Round(Face.Height / 2.0 + ID.py * Face.Height / ((p + 1) * 2));
+            sw = max_size * (Math.Pow(Math.Sqrt(2) / 2, ID.sx));
+            sh = max_size * (Math.Pow(Math.Sqrt(2) / 2, ID.sy));
+
+            active_rect = genRectangle(cx, cy, sw, sh);
+            Face = fillRect(Face, active_rect[0, 0], active_rect[0, 1], active_rect[1, 0], active_rect[1, 1], Color.Black);
+            switch (ID.idMask)
+            {
+                case 1:
+                    Face = fillRect(Face, active_rect[0, 0], active_rect[0, 1], active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 2.0), Color.White);
+                    break;
+                case 2:
+                    Face = fillRect(Face, 1 + (int)Math.Round(active_rect[0, 1] / 2.0), active_rect[0, 1], active_rect[1, 0], active_rect[1, 1], Color.White);
+                    break;
+                case 3:
+                    Face = fillRect(Face, active_rect[0, 0], active_rect[0, 1], active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 3.0), Color.White);
+                    Face = fillRect(Face, active_rect[0, 0], active_rect[0, 1], 2 * (int)Math.Round(active_rect[1, 1] / 3.0) + 1, active_rect[1, 1], Color.White);
+                    break;
+                case 4:
+                    Face = fillRect(Face, active_rect[0, 0], (int)Math.Round(active_rect[0, 1] / 3.0), active_rect[1, 0], active_rect[1, 1], Color.White);
+                    Face = fillRect(Face, 2 * (int)Math.Round(active_rect[0, 1] / 3.0) + 1, active_rect[0, 1], active_rect[1, 0], active_rect[1, 1], Color.White);
+                    break;
+                case 5:
+                    Face = fillRect(Face, active_rect[0, 0], (int)Math.Round(active_rect[0, 1] / 2.0), active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 2.0), Color.White);
+                    Face = fillRect(Face, (int)Math.Round(active_rect[0, 1] / 2.0) + 1, active_rect[0, 1], (int)Math.Round(active_rect[1, 1] / 2.0) + 1, active_rect[1, 1], Color.White);
+                    break;
+                case 6:
+                    Face = fillRect(Face, (int)Math.Round(active_rect[0, 1] / 4.0) + 1, 3 * (int)Math.Round(active_rect[0, 1] / 4.0), (int)Math.Round(active_rect[1, 1] / 4.0) + 1, 3 * (int)Math.Round(active_rect[1, 1] / 4.0), Color.White);
+                    break;
+                case 7:
+                    Face = fillRect(Face, active_rect[0, 0], (int)Math.Round(active_rect[0, 1] / 3.0), active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 2.0), Color.White);
+                    Face = fillRect(Face, 2 * (int)Math.Round(active_rect[0, 1] / 3.0) + 1, active_rect[1, 0], active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 2.0), Color.White);
+                    Face = fillRect(Face, (int)Math.Round(active_rect[0, 1] / 3.0) + 1, 2 * (int)Math.Round(active_rect[0, 1] / 3.0), (int)Math.Round(active_rect[1, 1] / 2.0) + 1, active_rect[1, 1], Color.White);
+                    break;
+                case 8:
+                    Face = fillRect(Face, active_rect[0, 0], (int)Math.Round(active_rect[0, 1] / 2.0), active_rect[1, 0], (int)Math.Round(active_rect[1, 1] / 3.0), Color.White);
+                    Face = fillRect(Face, active_rect[0, 0], (int)Math.Round(active_rect[0, 1] / 2.0), 2 * (int)Math.Round(active_rect[1, 1] / 3.0) + 1, active_rect[1, 1], Color.White);
+                    Face = fillRect(Face, (int)Math.Round(active_rect[0, 1] / 2.0) + 1, active_rect[0, 1], (int)Math.Round(active_rect[1, 1] / 3.0) + 1, 2 * (int)Math.Round(active_rect[1, 1] / 3.0), Color.White);
+                    break;
+            }
+            return Face;
+        }
+        Bitmap fillRect(Bitmap Image, int xb, int xe, int yb, int ye, Color fill)
+        {
+            for (int x = xb; x <= xe; x++)
+            {
+                for (int y = yb; x <= ye; y++)
+                {
+                    Image.SetPixel(x, y, fill);
+                }
+            }
+            return Image;
         }
     }
 }
